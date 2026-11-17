@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CODRU - Calculator preț bilet</title>
+<style>
+:root{--ink:#16241c;--mut:#5d6b63;--line:#dfe6e1;--bg:#f3f6f2;--card:#fff;--acc:#1f6b3a;--acc2:#e9f3ec;--warn:#8a5a00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:28px 16px 40px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:.2px}
+.sub{color:var(--mut);font-size:14px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+form{display:flex;gap:10px;align-items:stretch}
+.inp{position:relative;flex:1}
+.inp input{width:100%;font:600 30px/1.2 inherit;padding:12px 52px 12px 16px;border:2px solid var(--line);border-radius:12px;color:var(--ink);background:#fff;outline:none}
+.inp input:focus{border-color:var(--acc)}
+.inp span{position:absolute;right:16px;top:50%;transform:translateY(-50%);font:600 24px/1 inherit;color:var(--mut)}
+button{font:600 16px/1 inherit;padding:0 20px;border:0;border-radius:12px;background:var(--acc);color:#fff;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+.err{color:#a12525;font-size:14px;margin:10px 2px 0;min-height:20px}
+table{width:100%;border-collapse:collapse;margin-top:6px}
+td{padding:10px 4px;border-bottom:1px solid var(--line);vertical-align:baseline}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+td small{display:block;color:var(--mut);font-size:12.5px;font-weight:400}
+tr.k td{background:var(--acc2);font-weight:700;padding-left:10px;padding-right:10px}
+tr.k td:first-child{border-radius:8px 0 0 8px} tr.k td:last-child{border-radius:0 8px 8px 0;font-size:19px}
+tr.t td{color:var(--mut)} tr.t td:first-child{padding-left:18px}
+tr.last td{border-bottom:0}
+details{margin-top:16px}
+summary{cursor:pointer;color:var(--mut);font-size:14px}
+.par{display:grid;grid-template-columns:1fr 110px;gap:8px 12px;margin-top:12px;font-size:14px;align-items:center}
+.par input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;text-align:right;width:100%}
+.note{color:var(--mut);font-size:13px;margin-top:16px}
+.reset{background:none;color:var(--acc);padding:6px 0;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>CODRU - Calculator preț bilet</h1>
+<p class="sub">Scrie prețul comunicat în euro și apasă Enter.</p>
+<div class="card">
+<form id="f" autocomplete="off">
+<div class="inp"><input id="eur" inputmode="decimal" placeholder="72" aria-label="Preț comunicat în euro" autofocus><span>€</span></div>
+<button type="submit">Calculează</button>
+</form>
+<div class="err" id="err"></div>
+<table id="out" hidden>
+<tr><td>Comunicat</td><td id="o_com"></td></tr>
+<tr class="k"><td>NET organizator</td><td id="o_net"></td></tr>
+<tr class="t"><td>TVA<small id="l_tva"></small></td><td id="o_tva"></td></tr>
+<tr class="t"><td>Timbru muzical<small id="l_tm"></small></td><td id="o_tm"></td></tr>
+<tr class="t"><td>Crucea Roșie<small id="l_cr"></small></td><td id="o_cr"></td></tr>
+<tr><td>Total taxe</td><td id="o_tax"></td></tr>
+<tr class="k"><td>Raport iaBilet (preț bilet)</td><td id="o_rap"></td></tr>
+<tr class="t"><td>Comision iaBilet (emitere)<small id="l_co"></small></td><td id="o_co"></td></tr>
+<tr class="k last"><td>Clientul plătește</td><td id="o_cl"></td></tr>
+</table>
+<details>
+<summary>Parametri</summary>
+<div class="par">
+<label for="p_curs">Curs intern, lei NET pentru 1 €</label><input id="p_curs" inputmode="decimal">
+<label for="p_tva">TVA, % (inclus în prețul biletului)</label><input id="p_tva" inputmode="decimal">
+<label for="p_tm">Timbru muzical, % din prețul fără TVA</label><input id="p_tm" inputmode="decimal">
+<label for="p_cr">Crucea Roșie, % din prețul fără TVA</label><input id="p_cr" inputmode="decimal">
+<label for="p_co">Comision emitere, % din prețul biletului</label><input id="p_co" inputmode="decimal">
+</div>
+<button type="button" class="reset" id="reset">Revino la valorile standard</button>
+</details>
+<p class="note">Mecanism: comunicat × curs = NET organizator, iar taxele se pun peste. TVA e inclus în prețul biletului; timbrul muzical și Crucea Roșie se iau din prețul fără TVA; comisionul de emitere se adaugă peste prețul biletului. Total taxe = preț bilet minus NET (suma celor trei taxe rotunjite poate diferi cu 1 ban). Verificat pe pagina iaBilet la 51 €: acolo prețul biletului era 328,29 lei, formula dă 328,24.</p>
+</div>
+</main>
+<script>
+var STD={curs:5,tva:21,tm:5,cr:1,co:6.05};
+function num(s){s=String(s).trim().replace(/\s/g,'').replace(',','.');if(s===''||!/^\d*\.?\d+$|^\d+\.?$/.test(s))return NaN;return parseFloat(s)}
+function r2(v){return Math.round((v+1e-9)*100)/100}
+function lei(v){return v.toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2})+' lei'}
+function pct(v){return String(v).replace('.',',')+'%'}
+function calc(eur,p){
+  var net=r2(eur*p.curs), tva=p.tva/100, tm=p.tm/100, cr=p.cr/100, co=p.co/100;
+  var rap=r2(net*(1+tva)/(1-tm-cr)), vTva=r2(rap*tva/(1+tva)), baza=rap-vTva;
+  var vTm=r2(baza*tm), vCr=r2(baza*cr), vCo=r2(rap*co);
+  return {net:net,tva:vTva,tm:vTm,cr:vCr,tax:r2(rap-net),rap:rap,co:vCo,cl:r2(rap+vCo)};
+}
+function $(i){return document.getElementById(i)}
+function params(){var p={};for(var k in STD){var v=num($('p_'+k).value);p[k]=isNaN(v)?STD[k]:v}return p}
+function setParams(p){for(var k in STD)$('p_'+k).value=String(p[k]).replace('.',',')}
+function run(){
+  var e=num($('eur').value), p=params();
+  if(isNaN(e)||e<=0){$('err').textContent='Scrie un preț în euro, de exemplu 72.';$('out').hidden=true;return}
+  if(p.tm+p.cr>=100){$('err').textContent='Timbrul muzical și Crucea Roșie nu pot face împreună 100% sau mai mult.';$('out').hidden=true;return}
+  $('err').textContent='';
+  var c=calc(e,p);
+  $('o_com').textContent=String(e).replace('.',',')+' € + taxes';
+  $('o_net').textContent=lei(c.net);$('o_tva').textContent=lei(c.tva);$('o_tm').textContent=lei(c.tm);$('o_cr').textContent=lei(c.cr);
+  $('o_tax').textContent=lei(c.tax);$('o_rap').textContent=lei(c.rap);$('o_co').textContent=lei(c.co);$('o_cl').textContent=lei(c.cl);
+  $('l_tva').textContent=pct(p.tva)+', inclus în prețul biletului';$('l_tm').textContent=pct(p.tm)+' din prețul fără TVA';
+  $('l_cr').textContent=pct(p.cr)+' din prețul fără TVA';$('l_co').textContent=pct(p.co)+' din prețul biletului';
+  $('out').hidden=false;
+  try{history.replaceState(null,'','?eur='+encodeURIComponent(String(e)))}catch(x){}
+}
+setParams(STD);
+$('f').addEventListener('submit',function(ev){ev.preventDefault();run()});
+$('reset').addEventListener('click',function(){setParams(STD);if(!$('out').hidden)run()});
+['p_curs','p_tva','p_tm','p_cr','p_co'].forEach(function(i){$(i).addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();run()}})});
+(function(){var m=/[?&]eur=([^&]+)/.exec(location.search);if(m){$('eur').value=decodeURIComponent(m[1]).replace('.',',');run()}})();
+</script>
+</body>
+</html>
